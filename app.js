@@ -24,6 +24,7 @@ const CURRENCIES = [
   { code: 'CNY', symbol: '¥' },
   { code: 'KZT', symbol: '₸' },
   { code: 'AED', symbol: 'AED' },
+  { code: 'SAR', symbol: '﷼' },
   { code: 'KRW', symbol: '₩' }
 ];
 
