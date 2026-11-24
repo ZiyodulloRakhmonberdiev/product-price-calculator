@@ -1,4 +1,4 @@
-# Narx Kalkulyatori / Price Calculator
+# Tannarx Kalkulyatori / Cost Calculator
 
 Mahsulot tannarxini homashyo narxlari bo‘yicha hisoblaydigan offline PWA.
 

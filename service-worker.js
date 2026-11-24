@@ -1,9 +1,9 @@
-const CACHE_NAME = 'narx-calculator-v14';
+const CACHE_NAME = 'tannarx-calculator-v21';
 const urlsToCache = [
   './',
   './index.html',
-  './styles.css?v=14',
-  './app.js?v=14',
+  './styles.css?v=21',
+  './app.js?v=21',
   './manifest.json',
   './favicon.svg',
   './favicon.png',

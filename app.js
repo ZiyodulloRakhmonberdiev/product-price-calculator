@@ -1,4 +1,4 @@
-// Narx Calculator — PWA
+// Tannarx Calculator — PWA
 const STORAGE_KEY = 'narx_products';
 const LANG_KEY = 'narx_lang';
 const VIEW_KEY = 'narx_view';
@@ -32,7 +32,7 @@ const PREFIX_CODES = new Set(['USD', 'EUR', 'GBP', 'TRY', 'CNY', 'KRW', 'RUB', '
 const I18N = {
   uz: {
     introTitle: 'Mahsulotingiz tannarxi qancha?',
-    introSub: 'Narx Kalkulyatori',
+    introSub: 'Tannarx Kalkulyatori',
     feature1: 'Tezkor tannarx hisobi',
     feature2: 'Offline ishlaydi',
     feature3: 'Homashyo bo‘yicha hisob',
@@ -54,13 +54,20 @@ const I18N = {
     materialNamePh: 'Homashyo nomi',
     materialPricePh: 'Narx',
     materialCount: '{n} ta homashyo',
+    productCount: '{n} ta',
     currencyLabel: 'Valyuta',
     alertName: 'Mahsulot nomini kiriting!',
     alertMaterials: 'Kamida bitta homashyo qo‘shing!',
     confirmDelete: 'Bu mahsulotni o‘chirishni xohlaysizmi?',
+    confirmDeleteMaterial: 'Bu homashyoni o‘chirishni xohlaysizmi?',
+    dialogTitleConfirm: 'Tasdiqlash',
+    dialogTitleAlert: 'Diqqat',
+    cancel: 'Bekor',
+    confirm: 'Ha, o‘chirish',
+    ok: 'OK',
     online: 'ONLINE',
     offline: 'OFFLINE',
-    pageTitle: 'Narx Kalkulyatori',
+    pageTitle: 'Tannarx Kalkulyatori',
     createdBy: 'Created by',
     prevPage: 'Oldingi',
     nextPage: 'Keyingi',
@@ -78,7 +85,7 @@ const I18N = {
   },
   en: {
     introTitle: 'What’s your product cost?',
-    introSub: 'Price Calculator',
+    introSub: 'Cost Calculator',
     feature1: 'Instant cost breakdown',
     feature2: 'Works offline',
     feature3: 'Material-based costing',
@@ -100,13 +107,20 @@ const I18N = {
     materialNamePh: 'Material name',
     materialPricePh: 'Price',
     materialCount: '{n} materials',
+    productCount: '{n}',
     currencyLabel: 'Currency',
     alertName: 'Enter a product name!',
     alertMaterials: 'Add at least one material!',
     confirmDelete: 'Delete this product?',
+    confirmDeleteMaterial: 'Delete this material?',
+    dialogTitleConfirm: 'Confirm',
+    dialogTitleAlert: 'Notice',
+    cancel: 'Cancel',
+    confirm: 'Yes, delete',
+    ok: 'OK',
     online: 'ONLINE',
     offline: 'OFFLINE',
-    pageTitle: 'Price Calculator',
+    pageTitle: 'Cost Calculator',
     createdBy: 'Created by',
     prevPage: 'Prev',
     nextPage: 'Next',
@@ -124,7 +138,7 @@ const I18N = {
   },
   ru: {
     introTitle: 'Сколько стоит ваш товар?',
-    introSub: 'Калькулятор цены',
+    introSub: 'Калькулятор себестоимости',
     feature1: 'Быстрый расчёт себестоимости',
     feature2: 'Работает офлайн',
     feature3: 'Расчёт по материалам',
@@ -146,13 +160,20 @@ const I18N = {
     materialNamePh: 'Название материала',
     materialPricePh: 'Цена',
     materialCount: '{n} материалов',
+    productCount: '{n}',
     currencyLabel: 'Валюта',
     alertName: 'Введите название товара!',
     alertMaterials: 'Добавьте хотя бы один материал!',
     confirmDelete: 'Удалить этот товар?',
+    confirmDeleteMaterial: 'Удалить этот материал?',
+    dialogTitleConfirm: 'Подтверждение',
+    dialogTitleAlert: 'Внимание',
+    cancel: 'Отмена',
+    confirm: 'Да, удалить',
+    ok: 'OK',
     online: 'ONLINE',
     offline: 'OFFLINE',
-    pageTitle: 'Калькулятор цены',
+    pageTitle: 'Калькулятор себестоимости',
     createdBy: 'Created by',
     prevPage: 'Назад',
     nextPage: 'Далее',
@@ -179,6 +200,7 @@ let viewMode = localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
 let currentPage = 1;
 
 const productListEl = document.getElementById('product-list');
+const productCountEl = document.getElementById('product-count');
 const paginationEl = document.getElementById('pagination');
 const viewGridBtn = document.getElementById('view-grid');
 const viewListBtn = document.getElementById('view-list');
@@ -202,6 +224,13 @@ const deleteProductBtn = document.getElementById('delete-product-btn');
 const closeModalBtn = document.getElementById('close-modal');
 const addMaterialBtn = document.getElementById('add-material-btn');
 const onlineStatus = document.getElementById('online-status');
+const dialogEl = document.getElementById('dialog');
+const dialogTitleEl = document.getElementById('dialog-title');
+const dialogMessageEl = document.getElementById('dialog-message');
+const dialogCancelBtn = document.getElementById('dialog-cancel');
+const dialogConfirmBtn = document.getElementById('dialog-confirm');
+
+let dialogResolver = null;
 
 function t(key, vars = {}) {
   let text = (I18N[lang] && I18N[lang][key]) || I18N.uz[key] || key;
@@ -346,6 +375,51 @@ function showFieldError(message) {
   productNameInput.closest('.field-card')?.classList.toggle('is-invalid', Boolean(message));
 }
 
+function closeDialog(result) {
+  dialogEl.classList.remove('active');
+  dialogEl.setAttribute('aria-hidden', 'true');
+  const resolve = dialogResolver;
+  dialogResolver = null;
+  if (resolve) resolve(result);
+}
+
+function openDialog({ title, message, confirmText, cancelText, danger = false, showCancel = true }) {
+  return new Promise(resolve => {
+    if (dialogResolver) closeDialog(false);
+    dialogResolver = resolve;
+    dialogTitleEl.textContent = title;
+    dialogMessageEl.textContent = message;
+    dialogConfirmBtn.textContent = confirmText || t('ok');
+    dialogConfirmBtn.className = danger ? 'btn btn-danger' : 'btn btn-primary';
+    dialogCancelBtn.textContent = cancelText || t('cancel');
+    dialogCancelBtn.hidden = !showCancel;
+    dialogEl.classList.add('active');
+    dialogEl.setAttribute('aria-hidden', 'false');
+    dialogConfirmBtn.focus();
+  });
+}
+
+function showAlert(message, title) {
+  return openDialog({
+    title: title || t('dialogTitleAlert'),
+    message,
+    confirmText: t('ok'),
+    showCancel: false,
+    danger: false
+  });
+}
+
+function showConfirm(message, title) {
+  return openDialog({
+    title: title || t('dialogTitleConfirm'),
+    message,
+    confirmText: t('confirm'),
+    cancelText: t('cancel'),
+    showCancel: true,
+    danger: true
+  });
+}
+
 function clampPriceInput(input) {
   const raw = input.value;
   if (raw === '') return;
@@ -452,8 +526,20 @@ function renderPagination() {
   });
 }
 
+function updateProductCount() {
+  if (!productCountEl) return;
+  if (products.length === 0) {
+    productCountEl.hidden = true;
+    productCountEl.textContent = '';
+    return;
+  }
+  productCountEl.hidden = false;
+  productCountEl.textContent = t('productCount', { n: products.length });
+}
+
 function renderProducts() {
   setViewMode(viewMode);
+  updateProductCount();
 
   if (products.length === 0) {
     currentPage = 1;
@@ -475,10 +561,12 @@ function renderProducts() {
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageItems = products.slice(start, start + PAGE_SIZE);
 
-  productListEl.innerHTML = pageItems.map(product => {
+  productListEl.innerHTML = pageItems.map((product, i) => {
     const total = calculateTotal(product.materials);
+    const index = start + i + 1;
     return `
       <div class="product-card" data-id="${product.id}">
+        <span class="product-index">${index}</span>
         <div class="product-card-main">
           <h3>${escapeHtml(product.name)}</h3>
           <div class="product-meta">${t('materialCount', { n: product.materials.length })} · ${product.currency || 'UZS'}</div>
@@ -517,9 +605,9 @@ function openProduct(id) {
   modal.setAttribute('aria-hidden', 'false');
 }
 
-function openNewProduct() {
+async function openNewProduct() {
   if (!currentProductId && products.length >= LIMITS.productsMax) {
-    alert(t('alertProductsMax'));
+    await showAlert(t('alertProductsMax'));
     return;
   }
 
@@ -547,10 +635,8 @@ function renderMaterials(materials) {
 
   materialsContainer.innerHTML = materials.map((m, index) => `
     <div class="material-item" data-index="${index}">
-      <div class="material-item-head">
-        <span class="material-item-index">${index + 1}</span>
-        <button class="icon-btn delete-material" data-index="${index}" type="button" title="${t('delete')}" aria-label="${t('delete')}">✕</button>
-      </div>
+      <span class="material-item-index">${index + 1}</span>
+      <button class="icon-btn delete-material" data-index="${index}" type="button" title="${t('delete')}" aria-label="${t('delete')}">✕</button>
       <div class="field-card">
         <span class="field-label">${t('materialNamePh')}</span>
         <input type="text" class="material-name-input" value="${escapeHtml((m.name || '').slice(0, LIMITS.materialName))}" placeholder="${t('materialNamePh')}" maxlength="${LIMITS.materialName}" autocomplete="off">
@@ -627,17 +713,19 @@ function updateTotal(materials) {
   totalDisplay.textContent = total > 0 ? formatMoney(total, draftCurrency) : '—';
 }
 
-function deleteMaterial(index) {
+async function deleteMaterial(index) {
+  const ok = await showConfirm(t('confirmDeleteMaterial'));
+  if (!ok) return;
   syncDraftFromInputs();
   draftMaterials.splice(index, 1);
   renderMaterials(draftMaterials);
   updateTotal(draftMaterials);
 }
 
-function addMaterial() {
+async function addMaterial() {
   syncDraftFromInputs();
   if (draftMaterials.length >= LIMITS.materialsMax) {
-    alert(t('alertMaterialsMax'));
+    await showAlert(t('alertMaterialsMax'));
     return;
   }
   draftMaterials.push({ name: '', price: '' });
@@ -648,29 +736,29 @@ function addMaterial() {
   }, 50);
 }
 
-function validateMaterials(materials) {
+async function validateMaterials(materials) {
   for (const m of materials) {
     if (!m.name) {
-      alert(t('alertMaterialName'));
+      await showAlert(t('alertMaterialName'));
       return false;
     }
     if (m.name.length > LIMITS.materialName) {
-      alert(t('alertMaterialNameMax'));
+      await showAlert(t('alertMaterialNameMax'));
       return false;
     }
     if (!Number.isFinite(m.price) || m.price < 0 || m.price > LIMITS.priceMax) {
-      alert(t('alertPrice'));
+      await showAlert(t('alertPrice'));
       return false;
     }
   }
   if (materials.length > LIMITS.materialsMax) {
-    alert(t('alertMaterialsMax'));
+    await showAlert(t('alertMaterialsMax'));
     return false;
   }
   return true;
 }
 
-function saveProduct() {
+async function saveProduct() {
   let name = productNameInput.value.trim();
   if (name.length > LIMITS.productName) {
     name = name.slice(0, LIMITS.productName);
@@ -691,13 +779,13 @@ function saveProduct() {
 
   const materials = getCurrentMaterials();
   if (materials.length === 0) {
-    alert(t('alertMaterials'));
+    await showAlert(t('alertMaterials'));
     return;
   }
-  if (!validateMaterials(materials)) return;
+  if (!(await validateMaterials(materials))) return;
 
   if (!currentProductId && products.length >= LIMITS.productsMax) {
-    alert(t('alertProductsMax'));
+    await showAlert(t('alertProductsMax'));
     return;
   }
 
@@ -726,9 +814,10 @@ function saveProduct() {
   closeModal();
 }
 
-function deleteProduct() {
+async function deleteProduct() {
   if (!currentProductId) return;
-  if (!confirm(t('confirmDelete'))) return;
+  const ok = await showConfirm(t('confirmDelete'));
+  if (!ok) return;
 
   products = products.filter(p => p.id !== currentProductId);
   saveProducts();
@@ -772,6 +861,17 @@ closeModalBtn.addEventListener('click', closeModal);
 saveBtn.addEventListener('click', saveProduct);
 deleteProductBtn.addEventListener('click', deleteProduct);
 addMaterialBtn.addEventListener('click', addMaterial);
+
+dialogCancelBtn.addEventListener('click', () => closeDialog(false));
+dialogConfirmBtn.addEventListener('click', () => closeDialog(true));
+dialogEl.addEventListener('click', (e) => {
+  if (e.target === dialogEl) closeDialog(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && dialogEl.classList.contains('active')) {
+    closeDialog(false);
+  }
+});
 
 currencyTrigger.addEventListener('click', (e) => {
   e.stopPropagation();

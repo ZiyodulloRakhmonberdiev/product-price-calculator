@@ -1,6 +1,6 @@
 {
-  "name": "Narx Calculator",
-  "short_name": "Narx",
+  "name": "Tannarx Calculator",
+  "short_name": "Tannarx",
   "description": "Mahsulot tannarxini hisoblash uchun offline kalkulyator. Ma’lumotlar qurilmada saqlanadi.",
   "start_url": "/",
   "display": "standalone",

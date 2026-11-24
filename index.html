@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Narx Calculator — mahsulot tannarxi kalkulyatori</title>
-  <meta name="description" content="Narx Calculator — mahsulot tannarxini homashyo narxlari bo‘yicha hisoblang. Offline ishlaydi, ma’lumotlar qurilmangizda saqlanadi.">
-  <meta name="keywords" content="narx calculator, tannarx, mahsulot narxi, cost calculator, offline kalkulyator, homashyo">
+  <title>Tannarx Calculator — mahsulot tannarxi kalkulyatori</title>
+  <meta name="description" content="Tannarx Calculator — mahsulot tannarxini homashyo narxlari bo‘yicha hisoblang. Offline ishlaydi, ma’lumotlar qurilmangizda saqlanadi.">
+  <meta name="keywords" content="tannarx calculator, tannarx, mahsulot narxi, cost calculator, offline kalkulyator, homashyo">
   <meta name="author" content="Ziyodullo">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#2D6A4F">
@@ -13,7 +13,7 @@
   <link rel="canonical" href="https://ziyodullo.uz/">
 
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Narx Calculator">
+  <meta property="og:title" content="Tannarx Calculator">
   <meta property="og:description" content="Mahsulot tannarxini tez hisoblang. Offline. Ma’lumotlar faqat sizning qurilmangizda.">
   <meta property="og:image" content="icon-512.png">
   <meta property="og:locale" content="uz_UZ">
@@ -21,7 +21,7 @@
   <meta property="og:locale:alternate" content="ru_RU">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Narx Calculator">
+  <meta name="twitter:title" content="Tannarx Calculator">
   <meta name="twitter:description" content="Mahsulot tannarxi kalkulyatori. Offline va xavfsiz.">
 
   <link rel="manifest" href="manifest.json">
@@ -29,11 +29,11 @@
   <link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Narx Calculator">
+  <meta name="apple-mobile-web-app-title" content="Tannarx">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <link rel="preload" href="styles.css?v=14" as="style">
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="preload" href="styles.css?v=21" as="style">
+  <link rel="stylesheet" href="styles.css?v=21">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,7 +46,7 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Narx Calculator",
+    "name": "Tannarx Calculator",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Any",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "UZS" },
@@ -64,7 +64,7 @@
         <button type="button" class="lang-btn" data-lang="ru">RU</button>
       </div>
       <h1 class="intro-title" data-i18n="introTitle">Mahsulotingiz tannarxi qancha?</h1>
-      <p class="intro-sub" data-i18n="introSub">Narx Kalkulyatori</p>
+      <p class="intro-sub" data-i18n="introSub">Tannarx Kalkulyatori</p>
       <ul class="intro-features">
         <li data-i18n="feature1">Tezkor tannarx hisobi</li>
         <li data-i18n="feature2">Offline ishlaydi</li>
@@ -99,7 +99,10 @@
 
       <div class="app-body">
         <div class="section-head">
-          <h2 class="section-label" data-i18n="yourProducts">Mahsulotlaringiz</h2>
+          <h2 class="section-label">
+            <span data-i18n="yourProducts">Mahsulotlaringiz</span>
+            <span id="product-count" class="product-count" hidden></span>
+          </h2>
           <div class="section-actions">
             <div class="view-toggle" role="group" aria-label="View">
               <button type="button" class="view-btn is-active" id="view-grid" data-view="grid" title="Grid" aria-pressed="true">
@@ -161,10 +164,10 @@
 
       <div class="section-head materials-head">
         <h3 class="section-label" data-i18n="materials">Homashyolar</h3>
-        <button id="add-material-btn" class="btn-add" type="button" data-i18n="addMaterial">+ Qo‘shish</button>
       </div>
 
       <div id="materials-container" class="materials-grid"></div>
+      <button id="add-material-btn" class="btn-add btn-add-material" type="button" data-i18n="addMaterial">+ Qo‘shish</button>
 
       <div class="modal-actions">
         <button id="save-btn" class="btn btn-primary" type="button" data-i18n="save">Saqlash</button>
@@ -173,6 +176,18 @@
     </div>
   </div>
 
-  <script src="app.js?v=14" defer></script>
+  <div id="dialog" class="dialog" aria-hidden="true">
+    <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <h3 id="dialog-title" class="dialog-title"></h3>
+      <p id="dialog-message" class="dialog-message"></p>
+      <div class="dialog-actions">
+        <button type="button" id="dialog-cancel" class="btn btn-secondary" data-i18n="cancel">Bekor</button>
+        <button type="button" id="dialog-confirm" class="btn btn-danger">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=21" defer></script>
+
 </body>
 </html>
