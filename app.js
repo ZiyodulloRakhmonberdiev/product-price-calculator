@@ -183,6 +183,7 @@ const paginationEl = document.getElementById('pagination');
 const viewGridBtn = document.getElementById('view-grid');
 const viewListBtn = document.getElementById('view-list');
 const createBtn = document.getElementById('create-btn');
+const createBtnDesktop = document.getElementById('create-btn-desktop');
 const enterAppBtn = document.getElementById('enter-app-btn');
 const backToIntroBtn = document.getElementById('back-to-intro');
 const modal = document.getElementById('modal');
@@ -766,6 +767,7 @@ productNameInput.addEventListener('input', () => {
 });
 
 createBtn.addEventListener('click', openNewProduct);
+createBtnDesktop.addEventListener('click', openNewProduct);
 closeModalBtn.addEventListener('click', closeModal);
 saveBtn.addEventListener('click', saveProduct);
 deleteProductBtn.addEventListener('click', deleteProduct);

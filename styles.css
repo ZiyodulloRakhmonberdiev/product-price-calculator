@@ -408,6 +408,10 @@ body::after {
   color: #fff;
 }
 
+.chrome-create {
+  display: none;
+}
+
 .btn-add:active {
   transform: scale(0.97);
 }
@@ -998,6 +1002,18 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   body.mobile-app .chrome-lang {
+    display: none;
+  }
+
+  body.mobile-app .status-pill {
+    display: none;
+  }
+
+  body.mobile-app .chrome-create {
+    display: inline-flex;
+  }
+
+  body.mobile-app .section-create {
     display: none;
   }
 }
