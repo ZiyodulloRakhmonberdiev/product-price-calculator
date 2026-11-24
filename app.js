@@ -31,7 +31,7 @@ const PREFIX_CODES = new Set(['USD', 'EUR', 'GBP', 'TRY', 'CNY', 'KRW', 'RUB', '
 
 const I18N = {
   uz: {
-    introTitle: 'Nima sarflayotganingizni biling.',
+    introTitle: 'Mahsulotingiz tannarxi qancha?',
     introSub: 'Narx Kalkulyatori',
     feature1: 'Tezkor tannarx hisobi',
     feature2: 'Offline ishlaydi',
@@ -77,7 +77,7 @@ const I18N = {
     alertProductsMax: 'Eng ko‘pi bilan 500 ta mahsulot'
   },
   en: {
-    introTitle: 'Know what you spend.',
+    introTitle: 'What’s your product cost?',
     introSub: 'Price Calculator',
     feature1: 'Instant cost breakdown',
     feature2: 'Works offline',
@@ -123,7 +123,7 @@ const I18N = {
     alertProductsMax: 'Maximum 500 products allowed'
   },
   ru: {
-    introTitle: 'Знайте, сколько тратите.',
+    introTitle: 'Сколько стоит ваш товар?',
     introSub: 'Калькулятор цены',
     feature1: 'Быстрый расчёт себестоимости',
     feature2: 'Работает офлайн',
