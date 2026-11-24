@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Narx Calculator — mahsulot tannarxi kalkulyatori</title>
+  <meta name="description" content="Narx Calculator — mahsulot tannarxini homashyo narxlari bo‘yicha hisoblang. Offline ishlaydi, ma’lumotlar qurilmangizda saqlanadi.">
+  <meta name="keywords" content="narx calculator, tannarx, mahsulot narxi, cost calculator, offline kalkulyator, homashyo">
+  <meta name="author" content="Ziyodullo">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#2D6A4F">
+  <meta name="color-scheme" content="light">
+  <link rel="canonical" href="https://ziyodullo.uz/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Narx Calculator">
+  <meta property="og:description" content="Mahsulot tannarxini tez hisoblang. Offline. Ma’lumotlar faqat sizning qurilmangizda.">
+  <meta property="og:image" content="icon-512.png">
+  <meta property="og:locale" content="uz_UZ">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:locale:alternate" content="ru_RU">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Narx Calculator">
+  <meta name="twitter:description" content="Mahsulot tannarxi kalkulyatori. Offline va xavfsiz.">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Narx Calculator">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <link rel="preload" href="styles.css" as="style">
+  <link rel="stylesheet" href="styles.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,700&display=swap">
+  </noscript>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Narx Calculator",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "UZS" },
+    "description": "Mahsulot tannarxini homashyo narxlari bo‘yicha hisoblaydigan offline kalkulyator.",
+    "author": { "@type": "Person", "name": "Ziyodullo", "url": "https://ziyodullo.uz" }
+  }
+  </script>
+</head>
+<body>
+  <div class="page">
+    <aside class="intro">
+      <h1 class="intro-title" data-i18n="introTitle">Nima sarflayotganingizni biling.</h1>
+      <p class="intro-sub" data-i18n="introSub">Narx Kalkulyatori</p>
+      <ul class="intro-features">
+        <li data-i18n="feature1">Tezkor tannarx hisobi</li>
+        <li data-i18n="feature2">Offline ishlaydi</li>
+        <li data-i18n="feature3">Homashyo bo‘yicha hisob</li>
+        <li data-i18n="feature4">Qurilmangizda xavfsiz saqlanadi</li>
+      </ul>
+    </aside>
+
+    <main class="app-shell">
+      <div class="chrome">
+        <div class="chrome-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="chrome-actions">
+          <span class="status-pill" id="online-status">OFFLINE</span>
+          <div class="lang-switch" role="group" aria-label="Language">
+            <button type="button" class="lang-btn" data-lang="uz">UZ</button>
+            <button type="button" class="lang-btn" data-lang="en">EN</button>
+            <button type="button" class="lang-btn" data-lang="ru">RU</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-body">
+        <div class="section-head">
+          <h2 class="section-label" data-i18n="yourProducts">Mahsulotlaringiz</h2>
+          <button id="create-btn" class="btn-add btn-add-primary" type="button" data-i18n="newProduct">+ Yangi</button>
+        </div>
+
+        <div id="product-list" class="product-grid"></div>
+
+        <div class="tip-banner" data-i18n="tipBanner">
+          Maslahat: har bir mahsulot uchun homashyo narxlarini saqlang — tannarx avtomatik hisoblanadi.
+        </div>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <p><span data-i18n="createdBy">Created by</span> <a href="https://ziyodullo.uz" target="_blank" rel="noopener noreferrer">Ziyodullo</a></p>
+    </footer>
+  </div>
+
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title" data-i18n="newProductTitle">Yangi mahsulot</h2>
+        <button id="close-modal" class="close-btn" type="button" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="result-grid">
+        <div class="field-card result-card accent">
+          <span class="field-label" data-i18n="totalCost">Umumiy tannarx</span>
+          <span class="field-value" id="total-display">—</span>
+        </div>
+      </div>
+
+      <div class="modal-fields">
+        <div class="field-card">
+          <label class="field-label" for="product-name" data-i18n="productName">Mahsulot nomi</label>
+          <input type="text" id="product-name" autocomplete="off" data-i18n-placeholder="productNamePh" placeholder="Masalan: Qora mahsulot">
+        </div>
+
+        <div class="field-card">
+          <label class="field-label" for="product-currency" data-i18n="currencyLabel">Valyuta</label>
+          <select id="product-currency" class="field-select" aria-label="Currency"></select>
+        </div>
+      </div>
+
+      <div class="section-head materials-head">
+        <h3 class="section-label" data-i18n="materials">Homashyolar</h3>
+        <button id="add-material-btn" class="btn-add" type="button" data-i18n="addMaterial">+ Qo‘shish</button>
+      </div>
+
+      <div id="materials-container" class="materials-grid"></div>
+
+      <div class="modal-actions">
+        <button id="save-btn" class="btn btn-primary" type="button" data-i18n="save">Saqlash</button>
+        <button id="delete-product-btn" class="btn btn-danger" type="button" style="display: none;" data-i18n="delete">O‘chirish</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
