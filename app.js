@@ -1,8 +1,18 @@
 // Narx Calculator — PWA
 const STORAGE_KEY = 'narx_products';
 const LANG_KEY = 'narx_lang';
+const VIEW_KEY = 'narx_view';
 const LEGACY_PRODUCTS_KEY = 'maxsi_products';
 const LEGACY_LANG_KEY = 'maxsi_lang';
+const PAGE_SIZE = 20;
+const LIMITS = {
+  productName: 80,
+  materialName: 60,
+  priceMax: 999999999,
+  materialsMax: 50,
+  productsMax: 500
+};
+const MOBILE_MQ = window.matchMedia('(max-width: 719px)');
 
 const CURRENCIES = [
   { code: 'UZS', symbol: "so'm" },
@@ -51,7 +61,20 @@ const I18N = {
     online: 'ONLINE',
     offline: 'OFFLINE',
     pageTitle: 'Narx Kalkulyatori',
-    createdBy: 'Created by'
+    createdBy: 'Created by',
+    prevPage: 'Oldingi',
+    nextPage: 'Keyingi',
+    pageOf: '{current} / {total}',
+    viewGrid: 'Katak',
+    viewList: 'Ro‘yxat',
+    enterApp: 'Mahsulotlarga o‘tish',
+    back: '←',
+    alertNameMax: 'Mahsulot nomi 80 belgidan oshmasin',
+    alertMaterialName: 'Homashyo nomini kiriting',
+    alertMaterialNameMax: 'Homashyo nomi 60 belgidan oshmasin',
+    alertPrice: 'Narx 0 dan 999 999 999 gacha bo‘lishi kerak',
+    alertMaterialsMax: 'Eng ko‘pi bilan 50 ta homashyo',
+    alertProductsMax: 'Eng ko‘pi bilan 500 ta mahsulot'
   },
   en: {
     introTitle: 'Know what you spend.',
@@ -84,7 +107,20 @@ const I18N = {
     online: 'ONLINE',
     offline: 'OFFLINE',
     pageTitle: 'Price Calculator',
-    createdBy: 'Created by'
+    createdBy: 'Created by',
+    prevPage: 'Prev',
+    nextPage: 'Next',
+    pageOf: '{current} / {total}',
+    viewGrid: 'Grid',
+    viewList: 'List',
+    enterApp: 'Go to products',
+    back: '←',
+    alertNameMax: 'Product name must be at most 80 characters',
+    alertMaterialName: 'Enter a material name',
+    alertMaterialNameMax: 'Material name must be at most 60 characters',
+    alertPrice: 'Price must be between 0 and 999,999,999',
+    alertMaterialsMax: 'Maximum 50 materials allowed',
+    alertProductsMax: 'Maximum 500 products allowed'
   },
   ru: {
     introTitle: 'Знайте, сколько тратите.',
@@ -117,7 +153,20 @@ const I18N = {
     online: 'ONLINE',
     offline: 'OFFLINE',
     pageTitle: 'Калькулятор цены',
-    createdBy: 'Created by'
+    createdBy: 'Created by',
+    prevPage: 'Назад',
+    nextPage: 'Далее',
+    pageOf: '{current} / {total}',
+    viewGrid: 'Сетка',
+    viewList: 'Список',
+    enterApp: 'Перейти к товарам',
+    back: '←',
+    alertNameMax: 'Название не длиннее 80 символов',
+    alertMaterialName: 'Введите название материала',
+    alertMaterialNameMax: 'Название материала не длиннее 60 символов',
+    alertPrice: 'Цена должна быть от 0 до 999 999 999',
+    alertMaterialsMax: 'Не больше 50 материалов',
+    alertProductsMax: 'Не больше 500 товаров'
   }
 };
 
@@ -126,13 +175,25 @@ let products = [];
 let currentProductId = null;
 let draftMaterials = [];
 let draftCurrency = 'UZS';
+let viewMode = localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
+let currentPage = 1;
 
 const productListEl = document.getElementById('product-list');
+const paginationEl = document.getElementById('pagination');
+const viewGridBtn = document.getElementById('view-grid');
+const viewListBtn = document.getElementById('view-list');
 const createBtn = document.getElementById('create-btn');
+const enterAppBtn = document.getElementById('enter-app-btn');
+const backToIntroBtn = document.getElementById('back-to-intro');
 const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modal-title');
 const productNameInput = document.getElementById('product-name');
-const productCurrencySelect = document.getElementById('product-currency');
+const productNameError = document.getElementById('product-name-error');
+const currencyPicker = document.getElementById('currency-picker');
+const currencyTrigger = document.getElementById('currency-trigger');
+const currencyTriggerText = document.getElementById('currency-trigger-text');
+const currencyMenu = document.getElementById('currency-menu');
+const currencyField = document.querySelector('.currency-field');
 const materialsContainer = document.getElementById('materials-container');
 const totalDisplay = document.getElementById('total-display');
 const saveBtn = document.getElementById('save-btn');
@@ -159,12 +220,65 @@ function formatMoney(amount, code) {
   return PREFIX_CODES.has(cur.code) ? `${cur.symbol}${num}` : `${num} ${cur.symbol}`;
 }
 
+function currencyLabel(code) {
+  const cur = getCurrency(code);
+  return `${cur.code} · ${cur.symbol}`;
+}
+
+function closeCurrencyMenu() {
+  currencyMenu.hidden = true;
+  currencyTrigger.setAttribute('aria-expanded', 'false');
+  currencyField.classList.remove('is-open');
+}
+
+function openCurrencyMenu() {
+  currencyMenu.hidden = false;
+  currencyTrigger.setAttribute('aria-expanded', 'true');
+  currencyField.classList.add('is-open');
+}
+
+function toggleCurrencyMenu() {
+  if (currencyMenu.hidden) openCurrencyMenu();
+  else closeCurrencyMenu();
+}
+
+function setDraftCurrency(code) {
+  if (!CURRENCIES.some(c => c.code === code)) return;
+  draftCurrency = code;
+  currencyTriggerText.textContent = currencyLabel(code);
+  currencyMenu.querySelectorAll('.currency-option').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.value === code);
+  });
+  updateTotal(draftMaterials);
+}
+
 function populateCurrencySelect(selected) {
   const value = selected || draftCurrency || 'UZS';
-  productCurrencySelect.innerHTML = CURRENCIES.map(c =>
-    `<option value="${c.code}"${c.code === value ? ' selected' : ''}>${c.code} · ${c.symbol}</option>`
-  ).join('');
   draftCurrency = value;
+  currencyTriggerText.textContent = currencyLabel(value);
+  currencyMenu.innerHTML = CURRENCIES.map(c => `
+    <li role="presentation">
+      <button
+        type="button"
+        class="currency-option${c.code === value ? ' is-active' : ''}"
+        role="option"
+        data-value="${c.code}"
+        aria-selected="${c.code === value}"
+      >
+        <span class="currency-option-code">${c.code}</span>
+        <span class="currency-option-symbol">${c.symbol}</span>
+      </button>
+    </li>
+  `).join('');
+
+  currencyMenu.querySelectorAll('.currency-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setDraftCurrency(btn.dataset.value);
+      closeCurrencyMenu();
+    });
+  });
+
+  closeCurrencyMenu();
 }
 
 function applyI18n() {
@@ -201,6 +315,44 @@ function setLang(next) {
   lang = next;
   localStorage.setItem(LANG_KEY, lang);
   applyI18n();
+}
+
+function showMobileApp() {
+  document.body.classList.remove('mobile-landing');
+  document.body.classList.add('mobile-app');
+}
+
+function showMobileLanding() {
+  document.body.classList.add('mobile-landing');
+  document.body.classList.remove('mobile-app');
+  closeModal();
+}
+
+function syncMobileMode() {
+  if (!MOBILE_MQ.matches) {
+    document.body.classList.remove('mobile-landing', 'mobile-app');
+    return;
+  }
+  if (!document.body.classList.contains('mobile-app')) {
+    document.body.classList.add('mobile-landing');
+  }
+}
+
+function showFieldError(message) {
+  if (!productNameError) return;
+  productNameError.hidden = !message;
+  productNameError.textContent = message || '';
+  productNameInput.closest('.field-card')?.classList.toggle('is-invalid', Boolean(message));
+}
+
+function clampPriceInput(input) {
+  const raw = input.value;
+  if (raw === '') return;
+  let n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) n = 0;
+  if (n > LIMITS.priceMax) n = LIMITS.priceMax;
+  n = Math.floor(n);
+  if (String(n) !== raw) input.value = String(n);
 }
 
 function updateOnlineStatus() {
@@ -250,24 +402,87 @@ function priceDisplayValue(price) {
   return String(price);
 }
 
+function totalPages() {
+  return Math.max(1, Math.ceil(products.length / PAGE_SIZE));
+}
+
+function setViewMode(mode) {
+  viewMode = mode === 'list' ? 'list' : 'grid';
+  localStorage.setItem(VIEW_KEY, viewMode);
+  productListEl.dataset.view = viewMode;
+  productListEl.classList.toggle('is-list', viewMode === 'list');
+  productListEl.classList.toggle('is-grid', viewMode === 'grid');
+  viewGridBtn.classList.toggle('is-active', viewMode === 'grid');
+  viewListBtn.classList.toggle('is-active', viewMode === 'list');
+  viewGridBtn.setAttribute('aria-pressed', String(viewMode === 'grid'));
+  viewListBtn.setAttribute('aria-pressed', String(viewMode === 'list'));
+  viewGridBtn.title = t('viewGrid');
+  viewListBtn.title = t('viewList');
+}
+
+function renderPagination() {
+  const pages = totalPages();
+  if (products.length <= PAGE_SIZE) {
+    paginationEl.hidden = true;
+    paginationEl.innerHTML = '';
+    return;
+  }
+
+  if (currentPage > pages) currentPage = pages;
+
+  paginationEl.hidden = false;
+  paginationEl.innerHTML = `
+    <button type="button" class="page-btn" id="page-prev" ${currentPage <= 1 ? 'disabled' : ''}>${t('prevPage')}</button>
+    <span class="page-info">${t('pageOf', { current: currentPage, total: pages })}</span>
+    <button type="button" class="page-btn" id="page-next" ${currentPage >= pages ? 'disabled' : ''}>${t('nextPage')}</button>
+  `;
+
+  paginationEl.querySelector('#page-prev')?.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage -= 1;
+      renderProducts();
+    }
+  });
+  paginationEl.querySelector('#page-next')?.addEventListener('click', () => {
+    if (currentPage < pages) {
+      currentPage += 1;
+      renderProducts();
+    }
+  });
+}
+
 function renderProducts() {
+  setViewMode(viewMode);
+
   if (products.length === 0) {
+    currentPage = 1;
     productListEl.innerHTML = `
       <div class="empty-state">
         <p>${t('emptyTitle')}</p>
         <p>${t('emptyHint')}</p>
       </div>
     `;
+    paginationEl.hidden = true;
+    paginationEl.innerHTML = '';
     return;
   }
 
-  productListEl.innerHTML = products.map(product => {
+  const pages = totalPages();
+  if (currentPage > pages) currentPage = pages;
+  if (currentPage < 1) currentPage = 1;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = products.slice(start, start + PAGE_SIZE);
+
+  productListEl.innerHTML = pageItems.map(product => {
     const total = calculateTotal(product.materials);
     return `
       <div class="product-card" data-id="${product.id}">
-        <h3>${escapeHtml(product.name)}</h3>
+        <div class="product-card-main">
+          <h3>${escapeHtml(product.name)}</h3>
+          <div class="product-meta">${t('materialCount', { n: product.materials.length })} · ${product.currency || 'UZS'}</div>
+        </div>
         <div class="product-total">${formatMoney(total, product.currency)}</div>
-        <div class="product-meta">${t('materialCount', { n: product.materials.length })} · ${product.currency || 'UZS'}</div>
       </div>
     `;
   }).join('');
@@ -275,6 +490,8 @@ function renderProducts() {
   productListEl.querySelectorAll('.product-card').forEach(card => {
     card.addEventListener('click', () => openProduct(card.dataset.id));
   });
+
+  renderPagination();
 }
 
 function openProduct(id) {
@@ -289,7 +506,8 @@ function openProduct(id) {
   draftCurrency = product.currency || 'UZS';
 
   modalTitle.textContent = product.name;
-  productNameInput.value = product.name;
+  productNameInput.value = product.name.slice(0, LIMITS.productName);
+  showFieldError('');
   deleteProductBtn.style.display = '';
   populateCurrencySelect(draftCurrency);
   renderMaterials(draftMaterials);
@@ -299,11 +517,17 @@ function openProduct(id) {
 }
 
 function openNewProduct() {
+  if (!currentProductId && products.length >= LIMITS.productsMax) {
+    alert(t('alertProductsMax'));
+    return;
+  }
+
   currentProductId = null;
   draftMaterials = [];
   draftCurrency = 'UZS';
   modalTitle.textContent = t('newProductTitle');
   productNameInput.value = '';
+  showFieldError('');
   deleteProductBtn.style.display = 'none';
   populateCurrencySelect(draftCurrency);
   renderMaterials(draftMaterials);
@@ -322,9 +546,13 @@ function renderMaterials(materials) {
 
   materialsContainer.innerHTML = materials.map((m, index) => `
     <div class="material-item" data-index="${index}">
+      <div class="material-item-head">
+        <span class="material-item-index">${index + 1}</span>
+        <button class="icon-btn delete-material" data-index="${index}" type="button" title="${t('delete')}" aria-label="${t('delete')}">✕</button>
+      </div>
       <div class="field-card">
         <span class="field-label">${t('materialNamePh')}</span>
-        <input type="text" class="material-name-input" value="${escapeHtml(m.name || '')}" placeholder="${t('materialNamePh')}" autocomplete="off">
+        <input type="text" class="material-name-input" value="${escapeHtml((m.name || '').slice(0, LIMITS.materialName))}" placeholder="${t('materialNamePh')}" maxlength="${LIMITS.materialName}" autocomplete="off">
       </div>
       <div class="field-card price-card">
         <span class="field-label">${t('materialPricePh')}</span>
@@ -333,18 +561,30 @@ function renderMaterials(materials) {
           class="material-price-input"
           inputmode="numeric"
           min="0"
+          max="${LIMITS.priceMax}"
           step="1"
           value="${priceDisplayValue(m.price)}"
           placeholder="—"
           autocomplete="off"
         >
       </div>
-      <button class="icon-btn delete-material" data-index="${index}" type="button" title="${t('delete')}" aria-label="${t('delete')}">✕</button>
     </div>
   `).join('');
 
-  materialsContainer.querySelectorAll('.material-name-input, .material-price-input').forEach(input => {
-    input.addEventListener('input', syncDraftFromInputs);
+  materialsContainer.querySelectorAll('.material-name-input').forEach(input => {
+    input.addEventListener('input', () => {
+      if (input.value.length > LIMITS.materialName) {
+        input.value = input.value.slice(0, LIMITS.materialName);
+      }
+      syncDraftFromInputs();
+    });
+  });
+
+  materialsContainer.querySelectorAll('.material-price-input').forEach(input => {
+    input.addEventListener('input', () => {
+      clampPriceInput(input);
+      syncDraftFromInputs();
+    });
   });
 
   materialsContainer.querySelectorAll('.delete-material').forEach(btn => {
@@ -395,6 +635,10 @@ function deleteMaterial(index) {
 
 function addMaterial() {
   syncDraftFromInputs();
+  if (draftMaterials.length >= LIMITS.materialsMax) {
+    alert(t('alertMaterialsMax'));
+    return;
+  }
   draftMaterials.push({ name: '', price: '' });
   renderMaterials(draftMaterials);
   setTimeout(() => {
@@ -403,21 +647,60 @@ function addMaterial() {
   }, 50);
 }
 
+function validateMaterials(materials) {
+  for (const m of materials) {
+    if (!m.name) {
+      alert(t('alertMaterialName'));
+      return false;
+    }
+    if (m.name.length > LIMITS.materialName) {
+      alert(t('alertMaterialNameMax'));
+      return false;
+    }
+    if (!Number.isFinite(m.price) || m.price < 0 || m.price > LIMITS.priceMax) {
+      alert(t('alertPrice'));
+      return false;
+    }
+  }
+  if (materials.length > LIMITS.materialsMax) {
+    alert(t('alertMaterialsMax'));
+    return false;
+  }
+  return true;
+}
+
 function saveProduct() {
-  const name = productNameInput.value.trim();
+  let name = productNameInput.value.trim();
+  if (name.length > LIMITS.productName) {
+    name = name.slice(0, LIMITS.productName);
+    productNameInput.value = name;
+  }
+
   if (!name) {
-    alert(t('alertName'));
+    showFieldError(t('alertName'));
     productNameInput.focus();
     return;
   }
+  if (name.length > LIMITS.productName) {
+    showFieldError(t('alertNameMax'));
+    productNameInput.focus();
+    return;
+  }
+  showFieldError('');
 
   const materials = getCurrentMaterials();
   if (materials.length === 0) {
     alert(t('alertMaterials'));
     return;
   }
+  if (!validateMaterials(materials)) return;
 
-  const currency = productCurrencySelect.value || draftCurrency || 'UZS';
+  if (!currentProductId && products.length >= LIMITS.productsMax) {
+    alert(t('alertProductsMax'));
+    return;
+  }
+
+  const currency = draftCurrency || 'UZS';
 
   if (currentProductId) {
     const product = products.find(p => p.id === currentProductId);
@@ -437,6 +720,7 @@ function saveProduct() {
   }
 
   saveProducts();
+  if (!currentProductId) currentPage = totalPages();
   renderProducts();
   closeModal();
 }
@@ -447,11 +731,13 @@ function deleteProduct() {
 
   products = products.filter(p => p.id !== currentProductId);
   saveProducts();
+  if (currentPage > totalPages()) currentPage = totalPages();
   renderProducts();
   closeModal();
 }
 
 function closeModal() {
+  closeCurrencyMenu();
   modal.classList.remove('active');
   modal.setAttribute('aria-hidden', 'true');
   currentProductId = null;
@@ -459,15 +745,43 @@ function closeModal() {
   draftCurrency = 'UZS';
 }
 
+viewGridBtn.addEventListener('click', () => {
+  setViewMode('grid');
+  renderProducts();
+});
+viewListBtn.addEventListener('click', () => {
+  setViewMode('list');
+  renderProducts();
+});
+
+enterAppBtn.addEventListener('click', showMobileApp);
+backToIntroBtn.addEventListener('click', showMobileLanding);
+MOBILE_MQ.addEventListener('change', syncMobileMode);
+
+productNameInput.addEventListener('input', () => {
+  if (productNameInput.value.length > LIMITS.productName) {
+    productNameInput.value = productNameInput.value.slice(0, LIMITS.productName);
+  }
+  if (productNameInput.value.trim()) showFieldError('');
+});
+
 createBtn.addEventListener('click', openNewProduct);
 closeModalBtn.addEventListener('click', closeModal);
 saveBtn.addEventListener('click', saveProduct);
 deleteProductBtn.addEventListener('click', deleteProduct);
 addMaterialBtn.addEventListener('click', addMaterial);
 
-productCurrencySelect.addEventListener('change', () => {
-  draftCurrency = productCurrencySelect.value;
-  updateTotal(draftMaterials);
+currencyTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleCurrencyMenu();
+});
+
+document.addEventListener('click', (e) => {
+  if (!currencyPicker.contains(e.target)) closeCurrencyMenu();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeCurrencyMenu();
 });
 
 modal.addEventListener('click', (e) => {
@@ -483,10 +797,13 @@ window.addEventListener('offline', updateOnlineStatus);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => reg.update())
+      .catch(() => {});
   });
 }
 
 localStorage.setItem(LANG_KEY, lang);
+syncMobileMode();
 applyI18n();
 loadProducts();

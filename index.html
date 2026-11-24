@@ -32,8 +32,8 @@
   <meta name="apple-mobile-web-app-title" content="Narx Calculator">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <link rel="preload" href="styles.css" as="style">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="preload" href="styles.css?v=12" as="style">
+  <link rel="stylesheet" href="styles.css?v=12">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,9 +55,14 @@
   }
   </script>
 </head>
-<body>
+<body class="mobile-landing">
   <div class="page">
     <aside class="intro">
+      <div class="intro-lang lang-switch" role="group" aria-label="Language">
+        <button type="button" class="lang-btn" data-lang="uz">UZ</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="ru">RU</button>
+      </div>
       <h1 class="intro-title" data-i18n="introTitle">Nima sarflayotganingizni biling.</h1>
       <p class="intro-sub" data-i18n="introSub">Narx Kalkulyatori</p>
       <ul class="intro-features">
@@ -66,16 +71,24 @@
         <li data-i18n="feature3">Homashyo bo‘yicha hisob</li>
         <li data-i18n="feature4">Qurilmangizda xavfsiz saqlanadi</li>
       </ul>
+      <button type="button" id="enter-app-btn" class="btn-enter" data-i18n="enterApp">Mahsulotlarga o‘tish</button>
     </aside>
 
     <main class="app-shell">
       <div class="chrome">
-        <div class="chrome-dots" aria-hidden="true">
-          <span></span><span></span><span></span>
+        <div class="chrome-left">
+          <button type="button" id="back-to-intro" class="back-btn" aria-label="Back">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M11.25 3.75L6 9l5.25 5.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="chrome-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
         </div>
         <div class="chrome-actions">
           <span class="status-pill" id="online-status">OFFLINE</span>
-          <div class="lang-switch" role="group" aria-label="Language">
+          <div class="lang-switch chrome-lang" role="group" aria-label="Language">
             <button type="button" class="lang-btn" data-lang="uz">UZ</button>
             <button type="button" class="lang-btn" data-lang="en">EN</button>
             <button type="button" class="lang-btn" data-lang="ru">RU</button>
@@ -86,10 +99,21 @@
       <div class="app-body">
         <div class="section-head">
           <h2 class="section-label" data-i18n="yourProducts">Mahsulotlaringiz</h2>
-          <button id="create-btn" class="btn-add btn-add-primary" type="button" data-i18n="newProduct">+ Yangi</button>
+          <div class="section-actions">
+            <div class="view-toggle" role="group" aria-label="View">
+              <button type="button" class="view-btn is-active" id="view-grid" data-view="grid" title="Grid" aria-pressed="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+              </button>
+              <button type="button" class="view-btn" id="view-list" data-view="list" title="List" aria-pressed="false">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="2" width="14" height="2.5" rx="1"/><rect x="1" y="6.75" width="14" height="2.5" rx="1"/><rect x="1" y="11.5" width="14" height="2.5" rx="1"/></svg>
+              </button>
+            </div>
+            <button id="create-btn" class="btn-add btn-add-primary" type="button" data-i18n="newProduct">+ Yangi</button>
+          </div>
         </div>
 
-        <div id="product-list" class="product-grid"></div>
+        <div id="product-list" class="product-grid" data-view="grid"></div>
+        <div id="pagination" class="pagination" hidden></div>
 
         <div class="tip-banner" data-i18n="tipBanner">
           Maslahat: har bir mahsulot uchun homashyo narxlarini saqlang — tannarx avtomatik hisoblanadi.
@@ -118,12 +142,19 @@
       <div class="modal-fields">
         <div class="field-card">
           <label class="field-label" for="product-name" data-i18n="productName">Mahsulot nomi</label>
-          <input type="text" id="product-name" autocomplete="off" data-i18n-placeholder="productNamePh" placeholder="Masalan: Qora mahsulot">
+          <input type="text" id="product-name" autocomplete="off" maxlength="80" minlength="1" required data-i18n-placeholder="productNamePh" placeholder="Masalan: Qora mahsulot">
+          <span class="field-error" id="product-name-error" hidden></span>
         </div>
 
-        <div class="field-card">
-          <label class="field-label" for="product-currency" data-i18n="currencyLabel">Valyuta</label>
-          <select id="product-currency" class="field-select" aria-label="Currency"></select>
+        <div class="field-card currency-field">
+          <span class="field-label" id="currency-label" data-i18n="currencyLabel">Valyuta</span>
+          <div class="currency-picker" id="currency-picker">
+            <button type="button" class="currency-trigger" id="currency-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="currency-label">
+              <span class="currency-trigger-text" id="currency-trigger-text">UZS · so'm</span>
+              <span class="currency-chevron" aria-hidden="true"></span>
+            </button>
+            <ul class="currency-menu" id="currency-menu" role="listbox" hidden></ul>
+          </div>
         </div>
       </div>
 
@@ -141,6 +172,6 @@
     </div>
   </div>
 
-  <script src="app.js" defer></script>
+  <script src="app.js?v=11" defer></script>
 </body>
 </html>
